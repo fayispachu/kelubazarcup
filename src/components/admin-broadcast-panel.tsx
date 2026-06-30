@@ -1,7 +1,9 @@
 "use client";
 
-import { Camera, Loader2, MonitorUp, Radio, Square } from "lucide-react";
+import { Camera, Loader2, MonitorUp, Music, Radio, Square } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { useLiveState } from "@/hooks/use-live-state";
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -45,6 +47,9 @@ export function AdminBroadcastPanel({
   const [viewerCount, setViewerCount] = useState(0);
   const [isStarting, setIsStarting] = useState(false);
   const [hasLocalStream, setHasLocalStream] = useState(false);
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [isTogglingMusic, setIsTogglingMusic] = useState(false);
+  const state = useLiveState((store) => store.state);
 
   async function postBroadcasterCandidate(
     activeSessionId: string,
@@ -258,7 +263,8 @@ export function AdminBroadcastPanel({
       setStatus("Broadcasting live");
       startPolling();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not start broadcast");
+      const errorMessage = error instanceof Error ? error.message : "Could not start broadcast";
+      setStatus(errorMessage);
       stopLocalStream();
       sessionRef.current = "";
     } finally {
@@ -275,9 +281,42 @@ export function AdminBroadcastPanel({
     setStatus("Ready to broadcast");
   }
 
+  async function toggleMusic() {
+    setIsTogglingMusic(true);
+    try {
+      const response = await fetch("/api/admin/broadcast/music", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ musicEnabled: !musicEnabled }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMusicEnabled(data.musicEnabled);
+      }
+    } catch (error) {
+      console.error("Error toggling music:", error);
+    } finally {
+      setIsTogglingMusic(false);
+    }
+  }
+
+  useEffect(() => {
+    // Ensure the video element has the current stream
+    if (videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [hasLocalStream]);
+
   useEffect(() => {
     sessionRef.current = sessionId;
   }, [sessionId]);
+
+  useEffect(() => {
+    if (state?.liveMatch) {
+      setMusicEnabled(state.liveMatch.musicEnabled ?? false);
+    }
+  }, [state?.liveMatch]);
 
   useEffect(() => {
     return () => {
@@ -349,6 +388,15 @@ export function AdminBroadcastPanel({
           disabled={isStarting || (!isLive && !hasLocalStream)}
         >
           <Square size={16} /> End live
+        </button>
+        <button
+          className={buttonClassName(isLive && musicEnabled ? "danger" : "secondary")}
+          type="button"
+          onClick={() => void toggleMusic()}
+          disabled={isTogglingMusic || !isLive}
+        >
+          <Music size={16} />
+          {isLive && musicEnabled ? "Stop music" : "Play music"}
         </button>
       </div>
 

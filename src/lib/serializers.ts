@@ -21,6 +21,8 @@ export type LiveMatchDocument = {
   countdownDurationSeconds?: number;
 
   isLive?: boolean;
+  musicEnabled?: boolean;
+  musicUrl?: string;
 };
 
 
@@ -75,6 +77,8 @@ export function serializeLiveMatch(match: LiveMatchDocument) {
     countdownEndsAt: match.countdownEndsAt ? new Date(match.countdownEndsAt).toISOString() : null,
     countdownDurationSeconds: match.countdownDurationSeconds ?? 0,
     isLive: Boolean(match.isLive),
+    musicEnabled: Boolean(match.musicEnabled),
+    musicUrl: match.musicUrl ?? "/music.m4a",
   };
 }
 

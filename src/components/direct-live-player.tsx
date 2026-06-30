@@ -3,6 +3,8 @@
 import { Loader2, Radio } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { useLiveState } from "@/hooks/use-live-state";
+
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
@@ -15,8 +17,10 @@ export function DirectLivePlayer({
   isLive: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [status, setStatus] = useState("Connecting to live broadcast");
   const [hasStream, setHasStream] = useState(false);
+  const liveMatch = useLiveState((store) => store.state?.liveMatch);
 
   useEffect(() => {
     if (!isLive || !sessionId) {
@@ -149,6 +153,16 @@ export function DirectLivePlayer({
     };
   }, [isLive, sessionId]);
 
+  useEffect(() => {
+    if (!liveMatch?.musicEnabled && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (liveMatch?.musicEnabled && audioRef.current) {
+      audioRef.current.play().catch(() => null);
+    }
+  }, [liveMatch?.musicEnabled, liveMatch?.musicUrl]);
+
   return (
     <div className="relative h-full w-full bg-zinc-950">
       <video
@@ -157,6 +171,12 @@ export function DirectLivePlayer({
         autoPlay
         controls
         playsInline
+      />
+      <audio
+        ref={audioRef}
+        src={liveMatch?.musicUrl ?? "/music.m4a"}
+        loop
+        hidden
       />
       {!hasStream ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-white">

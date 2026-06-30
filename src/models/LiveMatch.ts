@@ -55,6 +55,15 @@ const LiveMatchSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    musicEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    musicUrl: {
+      type: String,
+      default: "/music.m4a",
+      trim: true,
+    },
   },
   { timestamps: true },
 );

@@ -18,6 +18,8 @@ export type LiveMatch = {
   countdownDurationSeconds?: number;
 
   isLive: boolean;
+  musicEnabled: boolean;
+  musicUrl: string;
 };
 
 export type NextMatch = {
