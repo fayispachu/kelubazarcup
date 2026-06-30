@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin";
 import { connectDb } from "@/lib/db";
 import { LiveMatch } from "@/models/LiveMatch";
 
