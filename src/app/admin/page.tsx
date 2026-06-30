@@ -8,9 +8,13 @@ import { getPublicState } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const session = await getAdminSession();
+  try {
+    const session = await getAdminSession();
 
-  if (!session?.user?.id) {
+    if (!session?.user?.id) {
+      redirect("/admin/login");
+    }
+  } catch {
     redirect("/admin/login");
   }
 

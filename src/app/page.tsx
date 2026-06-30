@@ -1,5 +1,6 @@
 import { LiveStateProvider } from "@/components/live-state-provider";
 import { NextMatchCard } from "@/components/next-match-card";
+import { PastMatchesPanel } from "@/components/past-matches-panel";
 import { Scoreboard } from "@/components/scoreboard";
 import { SiteHeader } from "@/components/site-header";
 import { VideoPlayer } from "@/components/video-player";
@@ -18,6 +19,7 @@ export default async function Home() {
           <div className="space-y-5">
             <VideoPlayer />
             <Scoreboard />
+            <PastMatchesPanel />
           </div>
           <aside>
             <NextMatchCard />

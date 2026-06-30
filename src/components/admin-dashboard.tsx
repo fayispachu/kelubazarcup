@@ -2,9 +2,9 @@
 
 import { Minus, Plus, Save, Upload } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 
-import { revalidateMatchViews } from "@/actions/admin";
 import { AdminBroadcastPanel } from "@/components/admin-broadcast-panel";
 import { TeamLogo } from "@/components/team-logo";
 import { useLiveState } from "@/hooks/use-live-state";
@@ -25,6 +25,7 @@ function buttonClassName(variant: "primary" | "secondary" | "danger" = "secondar
 export function AdminDashboard() {
   const state = useLiveState((store) => store.state);
   const refresh = useLiveState((store) => store.refresh);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
 
@@ -92,7 +93,7 @@ export function AdminDashboard() {
       throw new Error(error.message);
     }
 
-    await revalidateMatchViews();
+    router.refresh();
     await refresh();
     setMessage("Saved");
   }
@@ -129,6 +130,45 @@ export function AdminDashboard() {
 
     setLiveForm(next);
     await persist("/api/admin/live-match", next);
+  }
+
+  async function finishMatch() {
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/admin/past-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeTeam: liveForm.homeTeam,
+          awayTeam: liveForm.awayTeam,
+          homeScore: liveForm.homeScore,
+          awayScore: liveForm.awayScore,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Could not save finished match" }));
+        throw new Error(error.message);
+      }
+
+      const next = {
+        ...liveForm,
+        streamUrl: "",
+        broadcastSessionId: "",
+        phase: "NOT_STARTED" as "NOT_STARTED" | "PAUSED",
+        countdownEndsAt: null,
+        countdownDurationSeconds: 0,
+        isLive: false,
+      };
+
+      setLiveForm(next);
+      router.refresh();
+      await refresh();
+      setMessage("Match saved to history");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not save finished match");
+    }
   }
 
   function adjustScore(side: "homeScore" | "awayScore", delta: number) {
@@ -214,9 +254,14 @@ export function AdminDashboard() {
           />
 
           <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-zinc-950 dark:text-white">Live Match</h2>
-              {message ? <p className="text-sm font-semibold text-zinc-500">{message}</p> : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <button className={buttonClassName("danger")} type="button" onClick={() => void finishMatch()}>
+                  <Save size={16} /> End match
+                </button>
+                {message ? <p className="text-sm font-semibold text-zinc-500">{message}</p> : null}
+              </div>
             </div>
 
             <div className="grid gap-4">

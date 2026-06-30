@@ -174,22 +174,50 @@ export function AdminBroadcastPanel({
     }
   }
 
+  async function applyHdConstraints(stream: MediaStream) {
+    const videoTracks = stream.getVideoTracks();
+
+    await Promise.all(
+      videoTracks.map(async (track) => {
+        try {
+          await track.applyConstraints({
+            width: { ideal: 1920, max: 1920 },
+            height: { ideal: 1080, max: 1080 },
+            frameRate: { ideal: 30, max: 60 },
+          });
+        } catch {
+          // Ignore unsupported constraints and keep the stream available.
+        }
+      }),
+    );
+  }
+
   async function getCameraStream() {
-    return navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
+        width: { ideal: 1920, max: 1920 },
+        height: { ideal: 1080, max: 1080 },
+        frameRate: { ideal: 30, max: 60 },
         facingMode: "environment",
       },
     });
+
+    await applyHdConstraints(stream);
+    return stream;
   }
 
   async function getScreenStream() {
     const displayStream = await navigator.mediaDevices.getDisplayMedia({
       audio: true,
-      video: true,
+      video: {
+        width: { ideal: 1920, max: 1920 },
+        height: { ideal: 1080, max: 1080 },
+        frameRate: { ideal: 30, max: 60 },
+      },
     });
+
+    await applyHdConstraints(displayStream);
 
     if (displayStream.getAudioTracks().length > 0) {
       return displayStream;
